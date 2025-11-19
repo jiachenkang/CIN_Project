@@ -15,6 +15,9 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import PowerResilienceCard from './components/PowerResilienceControl';
 import FloodTimelineControl from './components/FloodTimelineControl';
 import InfrastructureInfoPanel from './components/InfrastructureInfoPanel';
+import { IconButton, Tooltip } from '@mui/material';
+import SatelliteIcon from '@mui/icons-material/Satellite';
+import MapIcon from '@mui/icons-material/Map';
 
 registerLoaders([OBJLoader, GLTFLoader]);
 
@@ -71,7 +74,10 @@ const INITIAL_VIEW_STATE = {
   pitch: 45
 };
 
-const MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
+const MAP_STYLES = {
+  street: 'mapbox://styles/mapbox/streets-v12',
+  satellite: 'mapbox://styles/mapbox/satellite-v9'
+};
 
 function DeckGLOverlay(props) {
   const overlay = useControl(() => new DeckOverlay({
@@ -102,6 +108,7 @@ function Root() {
     power: true,
     infrastructure: true
   });
+  const [mapStyle, setMapStyle] = useState('street');
 
   // Handle infrastructure click
   const handleInfrastructureClick = useCallback((info) => {
@@ -251,15 +258,17 @@ function Root() {
     };
   }, [getDeviceCoordinates]);
 
-  // 函数：合并基础设施数据和状态数据
+  // 函数：合并基础设施数据和状态数据 (性能优化)
   const mergeInfrastructureData = useCallback((metaData, currentTime, statusData) => {
     if (!metaData) return null;
 
     // 获取当前时间点的状态映射
     const statusMap = calculateInfrastructureStatusAtTime(currentTime, statusData);
     
-    // 深度克隆元数据
-    const mergedData = JSON.parse(JSON.stringify(metaData));
+    // 使用 structuredClone (如果支持) 或回退到 JSON 方法
+    const mergedData = typeof structuredClone !== 'undefined' 
+      ? structuredClone(metaData)
+      : JSON.parse(JSON.stringify(metaData));
 
     // 更新各层级设备的状态
     // Level 1: Power Plants
@@ -472,13 +481,14 @@ function Root() {
     }
   }, [infrastructureMetaData, infrastructureStatusData, currentTimestep, mergeInfrastructureData, calculateInfrastructureStatusAtTime]);
 
-  // Animation loop for power flow effect
+  // Animation loop for power flow effect (优化性能)
   useEffect(() => {
     const animate = () => {
       setAnimationFrame(prev => (prev + 1) % 360); // 360 frame cycle for smoother animation
     };
 
-    const interval = setInterval(animate, 30); // Update every 30ms for 33 FPS
+    // 降低帧率以提高 Windows 性能 - 从 33 FPS 降到 20 FPS
+    const interval = setInterval(animate, 50); // Update every 50ms for 20 FPS
     return () => clearInterval(interval);
   }, []);
 
@@ -505,10 +515,11 @@ function Root() {
       // 获取状态对应的颜色
       const statusColor = getStatusColor(status);
       
-      // 为每段路径创建粒子
+      // 为每段路径创建粒子 (性能优化：减少粒子数量)
       for (let i = 0; i < arcPath.length - 1; i++) {
         const [start, end] = [arcPath[i], arcPath[i + 1]];
-        const particleCount = 3; // 每段路径上的粒子数量
+        // 降低粒子数量以提高性能，特别是在 Windows 上
+        const particleCount = 2; // 从 3 减少到 2
         
         for (let j = 0; j < particleCount; j++) {
           particles.push({
@@ -673,6 +684,10 @@ function Root() {
     setCurrentTimestep(timestep);
     // 当时间步变化时，重新加载基础设施数据
   }, []);
+
+  const handleMapStyleToggle = () => {
+    setMapStyle(prev => prev === 'street' ? 'satellite' : 'street');
+  };
 
   // 当zoom状态改变时，强制重新渲染
   useEffect(() => {
@@ -1061,48 +1076,108 @@ function Root() {
   }
 
   return (
-    <MapGL
-      ref={mapRef}
-      initialViewState={INITIAL_VIEW_STATE}
-      mapStyle={MAP_STYLE}
-      mapboxAccessToken={MAPBOX_TOKEN}
-      minZoom={8}
-      maxZoom={17}
-      maxPitch={75}
-      onZoom={onZoom}
-    >
+    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+      <MapGL
+        initialViewState={INITIAL_VIEW_STATE}
+        mapStyle={MAP_STYLES[mapStyle]}
+        mapboxAccessToken={MAPBOX_TOKEN}
+        minZoom={8}
+        maxZoom={17}
+        maxPitch={75}
+        onZoom={onZoom}
+      >
       <DeckGLOverlay layers={layers} getTooltip={getTooltip} />
 
-      <Box sx={{
-        position: 'fixed',
-        top: 16,
-        right: 16,
-        zIndex: 11,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        alignItems: 'flex-end'
-      }}>
-        <PowerResilienceCard 
-          layerVisibility={layerVisibility}
-          onVisibilityChange={handleVisibilityChange}
-        />
-        
-        {selectedInfrastructure && (
-          <InfrastructureInfoPanel 
-            object={selectedInfrastructure} 
-            onClose={() => setSelectedInfrastructure(null)} 
-          />
-        )}
-      </Box>
-
-      <NavigationControl position="top-left" />
+      <NavigationControl 
+        position="top-left" 
+      />
+      
+      <PowerResilienceCard 
+        layerVisibility={layerVisibility}
+        onVisibilityChange={handleVisibilityChange}
+      />
+      
+      {selectedInfrastructure && (
+          <Box sx={{
+            position: 'fixed',
+            top: 80, 
+            right: 16,
+            zIndex: 11,
+            maxHeight: 'calc(100vh - 100px)',
+          }}>
+            <InfrastructureInfoPanel 
+              object={selectedInfrastructure} 
+              onClose={() => setSelectedInfrastructure(null)} 
+            />
+          </Box>
+      )}
       <FloodTimelineControl 
         onTimestepChange={handleTimestepChange}
         isVisible={layerVisibility.flood}
         availableTimesteps={floodTimestamps}
       />
-    </MapGL>
+      </MapGL>
+
+      {/* NSW Logo - Top Left */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 24,
+          left: 24,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: 1,
+          padding: 1,
+          boxShadow: 2
+        }}
+      >
+        <img 
+          src="/icons/NSW_icon.png" 
+          alt="NSW Government" 
+          style={{ height: 80, width: 'auto' }}
+        />
+      </Box>
+
+      {/* Map Style Toggle - Bottom Left */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: 30,
+          left: 30,
+          zIndex: 1000
+        }}
+      >
+        <Tooltip title={mapStyle === 'street' ? 'Switch to Satellite View' : 'Switch to Street View'} arrow>
+          <IconButton
+            onClick={handleMapStyleToggle}
+            sx={{
+              backgroundColor: 'transparent',
+              boxShadow: 0,
+              padding: 0,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              transition: 'all 0.2s ease-in-out'
+            }}
+            size="large"
+          >
+            {mapStyle === 'street' ? (
+              <img 
+                src="/icons/satellite.svg" 
+                alt="Satellite View" 
+                style={{ width: 96, height: 96 }}
+              />
+            ) : (
+              <img 
+                src="/icons/street.svg" 
+                alt="Street View" 
+                style={{ width: 96, height: 96 }}
+              />
+            )}
+          </IconButton>
+        </Tooltip>
+      </Box>
+    </div>
   );
 }
 
