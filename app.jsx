@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Map as MapGL, NavigationControl, useControl } from 'react-map-gl';
+import { Box } from '@mui/material';
 import { PolygonLayer, GeoJsonLayer, ColumnLayer, BitmapLayer, PathLayer, ScatterplotLayer, IconLayer } from '@deck.gl/layers';
 import { TileLayer } from '@deck.gl/geo-layers';
 import { SimpleMeshLayer, ScenegraphLayer } from '@deck.gl/mesh-layers';
@@ -13,6 +14,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 //MUI Components
 import PowerResilienceCard from './components/PowerResilienceControl';
 import FloodTimelineControl from './components/FloodTimelineControl';
+import InfrastructureInfoPanel from './components/InfrastructureInfoPanel';
 
 registerLoaders([OBJLoader, GLTFLoader]);
 
@@ -81,6 +83,8 @@ function DeckGLOverlay(props) {
 }
 
 function Root() {
+  const mapRef = useRef(null);
+  const [selectedInfrastructure, setSelectedInfrastructure] = useState(null);
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(INITIAL_VIEW_STATE.zoom);
   const [currentTimestep, setCurrentTimestep] = useState(null);
@@ -98,6 +102,36 @@ function Root() {
     power: true,
     infrastructure: true
   });
+
+  // Handle infrastructure click
+  const handleInfrastructureClick = useCallback((info) => {
+    const { object } = info;
+    if (!object) return;
+
+    setSelectedInfrastructure(object);
+
+    // Fly to the object
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: object.coordinates,
+        zoom: 15,
+        pitch: 60,
+        duration: 1000,
+        offset: [0, 50] // Shift map center down, so target appears above center (lower on screen)
+      });
+    }
+  }, []);
+
+  // Handle ESC key to close info panel
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedInfrastructure(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // 函数：根据当前时间点计算设备状态
   const calculateInfrastructureStatusAtTime = useCallback((currentTime, statusData) => {
@@ -689,7 +723,7 @@ function Root() {
       data: precipitationData, // Use filtered precipitation data
       diskResolution: 4,
       angle: 45,
-      radius: 100,
+      radius: 300,
       extruded: true,
       pickable: true,
       elevationScale: 5 * Math.pow(2, INITIAL_VIEW_STATE.zoom - zoom),
@@ -701,58 +735,6 @@ function Root() {
         128],
       getElevation: f => f.precipitation,
       visible: layerVisibility.prec
-    }),
-
-    // Level 4: Communication Towers (using GLTF model)
-    infrastructureData && new ScenegraphLayer({
-      id: 'level4-towers',
-      data: infrastructureData.infrastructure_hierarchy.level_4_communication_towers,
-      scenegraph: TOWER_MODEL,
-      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
-      getColor: d => getStatusColor(d.status),
-      sizeScale: 0.3,
-      getOrientation: [0,0,90],
-      pickable: true,
-      visible: layerVisibility.infrastructure
-    }),
-
-    // Level 1: Power Plants (using GLTF model)
-    infrastructureData && new ScenegraphLayer({
-      id: 'level1-power-plants',
-      data: infrastructureData.infrastructure_hierarchy.level_1_power_plants,
-      scenegraph: POWER_PLANT_MODEL,
-      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
-      getColor: d => getStatusColor(d.status),
-      getOrientation: [0,0,90],
-      sizeScale: 50,
-      pickable: true,
-      visible: layerVisibility.infrastructure
-    }),
-
-    // Level 2: Substations (using GLTF model)
-    infrastructureData && new ScenegraphLayer({
-      id: 'level2-substations',
-      data: infrastructureData.infrastructure_hierarchy.level_2_substations,
-      scenegraph: SUBSTATION_MODEL,
-      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
-      getColor: d => getStatusColor(d.status),
-      getOrientation: [0,0,90],
-      sizeScale: 50,
-      pickable: true,
-      visible: layerVisibility.infrastructure
-    }),
-
-    // Level 3: Transformers (using GLTF model)
-    infrastructureData && new ScenegraphLayer({
-      id: 'level3-transformers',
-      data: infrastructureData.infrastructure_hierarchy.level_3_transformers,
-      scenegraph: TRANSFORMER_MODEL,
-      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
-      getColor: d => getStatusColor(d.status),
-      getOrientation: [0,0,90],
-      sizeScale: 50,
-      pickable: true,
-      visible: layerVisibility.infrastructure
     }),
 
     // Hierarchical Cable Glow Effect (outer layer)
@@ -911,6 +893,62 @@ function Root() {
       visible: layerVisibility.power
     }),
 
+    // Level 4: Communication Towers (using GLTF model)
+    infrastructureData && new ScenegraphLayer({
+      id: 'level4-towers',
+      data: infrastructureData.infrastructure_hierarchy.level_4_communication_towers,
+      scenegraph: TOWER_MODEL,
+      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
+      getColor: d => getStatusColor(d.status),
+      sizeScale: 0.3,
+      getOrientation: [0,0,90],
+      pickable: true,
+      onClick: handleInfrastructureClick,
+      visible: layerVisibility.infrastructure
+    }),
+
+    // Level 1: Power Plants (using GLTF model)
+    infrastructureData && new ScenegraphLayer({
+      id: 'level1-power-plants',
+      data: infrastructureData.infrastructure_hierarchy.level_1_power_plants,
+      scenegraph: POWER_PLANT_MODEL,
+      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
+      getColor: d => getStatusColor(d.status),
+      getOrientation: [0,0,90],
+      sizeScale: 50,
+      pickable: true,
+      onClick: handleInfrastructureClick,
+      visible: layerVisibility.infrastructure
+    }),
+
+    // Level 2: Substations (using GLTF model)
+    infrastructureData && new ScenegraphLayer({
+      id: 'level2-substations',
+      data: infrastructureData.infrastructure_hierarchy.level_2_substations,
+      scenegraph: SUBSTATION_MODEL,
+      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
+      getColor: d => getStatusColor(d.status),
+      getOrientation: [0,0,90],
+      sizeScale: 50,
+      pickable: true,
+      onClick: handleInfrastructureClick,
+      visible: layerVisibility.infrastructure
+    }),
+
+    // Level 3: Transformers (using GLTF model)
+    infrastructureData && new ScenegraphLayer({
+      id: 'level3-transformers',
+      data: infrastructureData.infrastructure_hierarchy.level_3_transformers,
+      scenegraph: TRANSFORMER_MODEL,
+      getPosition: d => [d.coordinates[0], d.coordinates[1], 0],
+      getColor: d => getStatusColor(d.status),
+      getOrientation: [0,0,90],
+      sizeScale: 50,
+      pickable: true,
+      onClick: handleInfrastructureClick,
+      visible: layerVisibility.infrastructure
+    }),
+
     // Power particles layer
     powerParticles.length > 0 && new ScatterplotLayer({
       id: 'power-particles',
@@ -977,6 +1015,31 @@ function Root() {
     if (object.precipitation) {
       // This is for the ColumnLayer precipitation
       return `Precipitation: ${object.precipitation} mm`;
+    } else if (object.hierarchy_level === 1) {
+      // Level 1: Power Plants (Meta data only)
+      return `Level 1: ${object.name}
+      Code: ${object.code}
+      Type: ${object.type.toUpperCase()}
+      Capacity: ${object.capacity}
+      Output Voltage: ${object.voltage_output}
+      Operator: ${object.operator}
+      Fuel: ${object.fuel_type}
+      Efficiency: ${(object.efficiency * 100).toFixed(1)}%`;
+    } else if (object.hierarchy_level === 2) {
+      // Level 2: Substations (Meta data only)
+      return `Level 2: ${object.name}
+      Code: ${object.code}
+      Type: ${object.type.toUpperCase()}
+      Input Voltage: ${object.voltage_input}
+      Output Voltage: ${object.voltage_output}
+      Capacity: ${object.capacity}`;
+    } else if (object.hierarchy_level === 3) {
+      // Level 3: Transformers (Meta data only)
+      return `Level 3: Transformer ${object.code}
+      Type: ${object.type.replace('_', ' ').toUpperCase()}
+      Input Voltage: ${object.voltage_input}
+      Output Voltage: ${object.voltage_output}
+      Capacity: ${object.capacity}`;
     } else if (object.code && object.structures) {
       // This is for the Mesh tower
       return `Device No.: ${object.code}
@@ -985,51 +1048,9 @@ function Root() {
       Networks: ${object.networks}
       Impact Duration: ${object.impact}
       Backup Power: ${object.backup}`;
-    } else if (object.hierarchy_level === 1) {
-      // This is for power plants (Level 1)
-      return `🏭 Level 1: ${object.name}
-      Code: ${object.code}
-      Type: ${object.type.toUpperCase()}
-      Capacity: ${object.capacity}
-      Output Voltage: ${object.voltage_output}
-      Status: ${object.status}
-      Operator: ${object.operator}
-      Fuel: ${object.fuel_type}
-      Efficiency: ${(object.efficiency * 100).toFixed(1)}%
-      Risk Level: ${object.risk_level}`;
-    } else if (object.hierarchy_level === 2) {
-      // This is for substations (Level 2)
-      return `🏗️ Level 2: ${object.name}
-      Code: ${object.code}
-      Type: ${object.type.toUpperCase()}
-      Input Voltage: ${object.voltage_input}
-      Output Voltage: ${object.voltage_output}
-      Capacity: ${object.capacity}
-      Status: ${object.status}
-      Risk Level: ${object.risk_level}`;
-    } else if (object.hierarchy_level === 3) {
-      // This is for transformers (Level 3)
-      return `⚡ Level 3: Transformer ${object.code}
-      Type: ${object.type.replace('_', ' ').toUpperCase()}
-      Input Voltage: ${object.voltage_input}
-      Output Voltage: ${object.voltage_output}
-      Capacity: ${object.capacity}
-      Status: ${object.status}
-      Risk Level: ${object.risk_level}`;
-    } else if (object.hierarchy_level === 4) {
-      // This is for communication towers (Level 4)
-      return `🗼 Level 4: Communication Tower
-      Code: ${object.code}
-      Address: ${object.address}
-      Structure: ${object.structures}
-      Network: ${object.networks}
-      Power Consumption: ${object.power_consumption}
-      Impact Duration: ${object.impact}
-      Backup Power: ${object.backup}
-      Risk Level: ${object.risk}`;
     } else if (object.properties && object.properties.cable_id) {
       // This is for hierarchical power cables
-      return `🔌 Power Cable ${object.properties.cable_id}
+      return `Power Cable ${object.properties.cable_id}
       From: ${object.properties.from} (Level ${object.properties.from_level})
       To: ${object.properties.to} (Level ${object.properties.to_level})
       Voltage: ${object.properties.voltage}
@@ -1041,6 +1062,7 @@ function Root() {
 
   return (
     <MapGL
+      ref={mapRef}
       initialViewState={INITIAL_VIEW_STATE}
       mapStyle={MAP_STYLE}
       mapboxAccessToken={MAPBOX_TOKEN}
@@ -1051,11 +1073,30 @@ function Root() {
     >
       <DeckGLOverlay layers={layers} getTooltip={getTooltip} />
 
+      <Box sx={{
+        position: 'fixed',
+        top: 16,
+        right: 16,
+        zIndex: 11,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        alignItems: 'flex-end'
+      }}>
+        <PowerResilienceCard 
+          layerVisibility={layerVisibility}
+          onVisibilityChange={handleVisibilityChange}
+        />
+        
+        {selectedInfrastructure && (
+          <InfrastructureInfoPanel 
+            object={selectedInfrastructure} 
+            onClose={() => setSelectedInfrastructure(null)} 
+          />
+        )}
+      </Box>
+
       <NavigationControl position="top-left" />
-      <PowerResilienceCard 
-        layerVisibility={layerVisibility}
-        onVisibilityChange={handleVisibilityChange}
-      />
       <FloodTimelineControl 
         onTimestepChange={handleTimestepChange}
         isVisible={layerVisibility.flood}

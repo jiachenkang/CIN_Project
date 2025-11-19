@@ -1,20 +1,17 @@
 import React from 'react';
 import { Card, CardContent, Typography, Switch, Box } from '@mui/material';
 
-const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
+const PowerResilienceCard = ({ layerVisibility, onVisibilityChange, sx }) => {
   const handleSwitchChange = (layerName) => (event) => {
     onVisibilityChange(layerName, event.target.checked);
   };
 
   return (
     <Card sx={{ 
-      position: 'fixed', 
-      top: 16, 
-      right: 16, 
       width: 300, 
       backgroundColor: 'rgba(255, 255, 255, 0.9)',
       boxShadow: 3,
-      zIndex:11
+      ...sx
     }}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
