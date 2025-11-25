@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, Typography, Switch, Box, IconButton, Fade } from '@mui/material';
+import { Card, CardContent, Typography, Switch, Box, IconButton, Fade, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DownloadIcon from '@mui/icons-material/Download';
+import InferenceConfig from './InferenceConfig';
 
 const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
+  const [showInference, setShowInference] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const anchorRef = useRef(null);
@@ -282,6 +284,16 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
     };
   }, []);
 
+  if (showInference) {
+    return <InferenceConfig onClose={(success) => {
+      setShowInference(false);
+      if (success) {
+        // Reload application data or trigger necessary updates here
+        window.location.reload();
+      }
+    }} />;
+  }
+
   return (
     <>
       {/* 设置按钮 */}
@@ -317,11 +329,11 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
               position: 'fixed', 
               top: 16, // 与设置按钮同高
               right: 72, // 设置按钮左侧，留出按钮宽度+间距
-              width: 240, // 减小宽度以适应内容
+              width: 280, // 减小宽度以适应内容
               backgroundColor: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(10px)',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-              zIndex: 11,
+              zIndex: 12,
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: 2,
               transform: 'translateY(0)',
@@ -337,6 +349,29 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
                   color: 'primary.main',
                   mb: 1
                 }}>
+                  Inference
+                </Typography>
+
+                <Button 
+                  variant="outlined" 
+                  color="primary" 
+                  size="small" 
+                  fullWidth 
+                  onClick={() => {
+                    setIsOpen(false);
+                    setShowInference(true);
+                  }}
+                  sx={{ mb: 2 }}
+                >
+                  Run Inference Model
+                </Button>
+
+                <Typography variant="h6" gutterBottom sx={{ 
+                  fontWeight: 600,
+                  color: 'primary.main',
+                  mb: 1,
+                  mt: 1
+                }}>
                   Layer Control
                 </Typography>
                 <Typography variant="caption" sx={{ 
@@ -348,13 +383,16 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
                 </Typography>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    bgcolor: 'rgb(97, 116, 255)', 
+                  <Box 
+                    component="img"
+                    src="/icons/precipitation.png"
+                    alt="Precipitation"
+                    sx={{ 
+                    width: 36, 
+                    height: 36, 
                     mr: 1.5,
                     borderRadius: 0.5,
-                    boxShadow: '0 2px 4px rgba(97, 116, 255, 0.3)'
+                    objectFit: 'cover'
                   }} />
                   <Typography sx={{ flexGrow: 1, fontSize: '0.9rem' }}>Precipitation</Typography>
                   <IconButton 
@@ -376,13 +414,16 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    bgcolor: 'warning.main', 
+                  <Box 
+                    component="img"
+                    src="/icons/flood.png"
+                    alt="Flood Prediction"
+                    sx={{ 
+                    width: 36, 
+                    height: 36, 
                     mr: 1.5,
                     borderRadius: 0.5,
-                    boxShadow: '0 2px 4px rgba(255, 152, 0, 0.3)'
+                    objectFit: 'cover'
                   }} />
                   <Typography sx={{ flexGrow: 1, fontSize: '0.9rem' }}>Flood Prediction</Typography>
                   <IconButton 
@@ -404,13 +445,16 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    bgcolor: 'rgb(123, 232, 56)', 
+                  <Box 
+                    component="img"
+                    src="/icons/power.png"
+                    alt="Power Supply"
+                    sx={{ 
+                    width: 36, 
+                    height: 36, 
                     mr: 1.5,
                     borderRadius: 0.5,
-                    boxShadow: '0 2px 4px rgba(123, 232, 56, 0.3)'
+                    objectFit: 'cover'
                   }} />
                   <Typography sx={{ flexGrow: 1, fontSize: '0.9rem' }}>Power Supply</Typography>
                   <IconButton 
@@ -432,13 +476,16 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Box sx={{ 
-                    width: 20, 
-                    height: 20, 
-                    background: 'linear-gradient(135deg, rgb(255, 0, 0), rgb(255, 165, 0), rgb(255, 255, 0), rgb(0, 255, 0))', 
+                  <Box 
+                    component="img"
+                    src="/icons/infrastructure.png"
+                    alt="Infrastructure"
+                    sx={{ 
+                    width: 36, 
+                    height: 36, 
                     mr: 1.5,
                     borderRadius: 0.5,
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                    objectFit: 'cover'
                   }} />
                   <Typography sx={{ flexGrow: 1, fontSize: '0.9rem' }}>Infrastructure</Typography>
                   <IconButton 

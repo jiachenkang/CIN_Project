@@ -1,60 +1,212 @@
 {
     "infra_status": {
+        "default": [
+            {
+                "risk_level": 1,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "type": "info"
+                    }
+                ]
+            }
+        ],
         "tower_003": [
             {
                 "time_start": "20221024_1020",
+                "time_end": "20221024_1515",
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Extreme Weather",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Fault probability: 60%\nCause: Extreme Weather\n\n**Insufficient backup power**\nExpected outage: 5h\navailable: 3h\nBackup power shortfall: 2 units\nNearest reallocatable power source: 2650006",
+                        "type": "suggestion"
+                    }
+                ]
+            },
+            {
+                "time_start": "20221024_1520",
                 "time_end": "20221024_1815",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "On backup power",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Cause: Extreme Weather\n\n**Insufficient backup power**\nExpected outage: 6h\navailable: 3h\nBackup power shortfall: 2 units\nNearest reallocatable power source: 2650006",
+                        "type": "suggestion"
+                    }
+                ]
             },
             {
                 "time_start": "20221024_1820",
                 "time_end": "20221024_2345",
-                "risk_level": 3
+                "risk_level": 3,
+                "messages": [
+                    {
+                        "title": "FAULT",
+                        "content": "Status data unavailable",
+                        "type": "error"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Cause: Extreme Weather\n\n**Insufficient backup power**\nExpected outage: 3h\navailable: 0h\nBackup power shortfall: 2 units\nNearest reallocatable power source: 2650006",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ],
         "tower_002": [
             {
                 "time_start": "20221024_0900",
+                "time_end": "20221024_1850",
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Extreme weather",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Fault probability: 45%\nCause: Extreme Weather\n\n**Insufficient backup power**\nExpected outage: 8h\navailable: 7h\nBackup power shortfall: 1 unit\nNearest reallocatable power source: 2650014",
+                        "type": "suggestion"
+                    }
+                ]
+            },
+            {
+                "time_start": "20221024_1900",
                 "time_end": "20221024_2400",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "On backup power",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Cause: Extreme Weather\n\n**Insufficient backup power**\nExpected outage: 8h\navailable: 7h\nBackup power shortfall: 1 unit\nNearest reallocatable power source: 2650014",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ],
         "sub_001": [
             {
                 "time_start": "20221024_1620",
                 "time_end": "20221024_2400",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Extreme weather",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Fault probability: 5%\nCause: Extreme Weather\n\n**Potentially affected towers**\n2650018\n2650054\n2650006\n\n**Backup power shortfall**\n6 units",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ],
         "trans_007": [
             {
                 "time_start": "20221024_0400",
                 "time_end": "20221024_1600",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Flood",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Fault probability: 55%\nCause: Flood\n\n**Potentially affected towers**\n2650039\n2650044\n\n**Backup power shortfall**\n8 units",
+                        "type": "suggestion"
+                    }
+                ]
             },
             {
                 "time_start": "20221024_1600",
                 "time_end": "20221024_2345",
-                "risk_level": 3
+                "risk_level": 3,
+                "messages": [
+                    {
+                        "title": "FAULT",
+                        "type": "error"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "Cause: Flood\n\n**Affected towers**\n2650039\n2650044\n\n**Backup power shortfall**\n8 units",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ],
         "tower_004": [
             {
                 "time_start": "20221024_1600",
                 "time_end": "20221024_2400",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Power facility failure",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "**Insufficient backup power**\nExpected outage: 18h\navailable: 10h\nBackup power shortfall: 3 units\nNearest reallocatable power source: 2650011",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ],
         "tower_006": [
             {
                 "time_start": "20221024_1600",
                 "time_end": "20221024_1900",
-                "risk_level": 2
+                "risk_level": 2,
+                "messages": [
+                    {
+                        "title": "OPERATIONAL",
+                        "content": "Alert: Power facility failure",
+                        "type": "warning"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "**Insufficient backup power**\nExpected outage: 18h\navailable: 3h\nBackup power shortfall: 5 units\nNearest reallocatable power source: 2650004",
+                        "type": "suggestion"
+                    }
+                ]
             },
             {
                 "time_start": "20221024_1900",
                 "time_end": "20221024_2400",
-                "risk_level": 3
+                "risk_level": 3,
+                "messages": [
+                    {
+                        "title": "FAULT",
+                        "content": "Status data unavailable",
+                        "type": "error"
+                    },
+                    {
+                        "title": "RESILIENCE INSIGHTS",
+                        "content": "**Insufficient backup power**\nExpected outage: 15h\navailable: 0h\nBackup power shortfall: 5 units\nNearest reallocatable power source: 2650004",
+                        "type": "suggestion"
+                    }
+                ]
             }
         ]
     }

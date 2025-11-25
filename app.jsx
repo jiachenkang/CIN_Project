@@ -154,8 +154,14 @@ function Root() {
 
     const statusMap = {};
     
+    // Get default messages
+    const defaultStatusEntry = statusData.infra_status.default && statusData.infra_status.default[0];
+    const defaultMessages = defaultStatusEntry ? defaultStatusEntry.messages : [];
+    
     // 遍历所有设备的状态数据
     Object.entries(statusData.infra_status).forEach(([deviceId, statusPeriods]) => {
+      if (deviceId === 'default') return;
+
       // 检查当前时间是否在任何异常时间段内
       const activeStatus = statusPeriods.find(period => {
         const startTime = period.time_start;
@@ -169,14 +175,16 @@ function Root() {
         statusMap[deviceId] = {
           status: getRiskLevelStatus(activeStatus.risk_level),
           risk_level: activeStatus.risk_level,
-          info: activeStatus.info || ''
+          info: activeStatus.info || '',
+          messages: activeStatus.messages || defaultMessages
         };
       } else {
         // 如果没有异常状态，则为正常状态
         statusMap[deviceId] = {
           status: 'operational',
           risk_level: 1,
-          info: ''
+          info: '',
+          messages: defaultMessages
         };
       }
     });
@@ -265,6 +273,10 @@ function Root() {
     // 获取当前时间点的状态映射
     const statusMap = calculateInfrastructureStatusAtTime(currentTime, statusData);
     
+    // Get default messages for fallback
+    const defaultStatusEntry = statusData?.infra_status?.default?.[0];
+    const defaultMessages = defaultStatusEntry?.messages || [];
+
     // 使用 structuredClone (如果支持) 或回退到 JSON 方法
     const mergedData = typeof structuredClone !== 'undefined' 
       ? structuredClone(metaData)
@@ -276,12 +288,14 @@ function Root() {
       if (statusMap[plant.id]) {
         plant.status = statusMap[plant.id].status;
         plant.risk_level = statusMap[plant.id].risk_level;
+        plant.messages = statusMap[plant.id].messages;
         if (statusMap[plant.id].info) {
           plant.info = statusMap[plant.id].info;
         }
       } else {
         plant.status = 'operational';
         plant.risk_level = 1;
+        plant.messages = defaultMessages;
       }
     });
 
@@ -290,12 +304,14 @@ function Root() {
       if (statusMap[substation.id]) {
         substation.status = statusMap[substation.id].status;
         substation.risk_level = statusMap[substation.id].risk_level;
+        substation.messages = statusMap[substation.id].messages;
         if (statusMap[substation.id].info) {
           substation.info = statusMap[substation.id].info;
         }
       } else {
         substation.status = 'operational';
         substation.risk_level = 1;
+        substation.messages = defaultMessages;
       }
     });
 
@@ -304,12 +320,14 @@ function Root() {
       if (statusMap[transformer.id]) {
         transformer.status = statusMap[transformer.id].status;
         transformer.risk_level = statusMap[transformer.id].risk_level;
+        transformer.messages = statusMap[transformer.id].messages;
         if (statusMap[transformer.id].info) {
           transformer.info = statusMap[transformer.id].info;
         }
       } else {
         transformer.status = 'operational';
         transformer.risk_level = 1;
+        transformer.messages = defaultMessages;
       }
     });
 
@@ -318,12 +336,14 @@ function Root() {
       if (statusMap[tower.id]) {
         tower.status = statusMap[tower.id].status;
         tower.risk = statusMap[tower.id].risk_level;
+        tower.messages = statusMap[tower.id].messages;
         if (statusMap[tower.id].info) {
           tower.info = statusMap[tower.id].info;
         }
       } else {
         tower.status = 'operational';
         tower.risk = 1;
+        tower.messages = defaultMessages;
       }
     });
 
@@ -361,7 +381,7 @@ function Root() {
           // 使用硬编码的回退值
           setFloodTimestamps([{
             time: 'waterdepth_20221024_000000',
-            display: '2022-10-24 00:00'
+            display: '24-10-2022 00:00'
           }]);
           return;
         }
@@ -376,7 +396,7 @@ function Root() {
             const [_, year, month, day, hour, minute, second] = match;
             return {
               time: folder,
-              display: `${year}-${month}-${day} ${hour}:${minute}`
+              display: `${day}-${month}-${year} ${hour}:${minute}`
             };
           }
           return null;
@@ -396,7 +416,7 @@ function Root() {
         // 使用硬编码的回退值
         setFloodTimestamps([{
           time: 'waterdepth_20221024_000000',
-          display: '2022-10-24 00:00'
+          display: '24-10-2022 00:00'
         }]);
       }
     };
@@ -462,6 +482,22 @@ function Root() {
         infrastructureStatusData
       );
       setInfrastructureData(mergedData);
+      
+      // Update selectedInfrastructure if panel is open
+      if (selectedInfrastructure && mergedData) {
+        const { infrastructure_hierarchy } = mergedData;
+        const allDevices = [
+          ...(infrastructure_hierarchy.level_1_power_plants || []),
+          ...(infrastructure_hierarchy.level_2_substations || []),
+          ...(infrastructure_hierarchy.level_3_transformers || []),
+          ...(infrastructure_hierarchy.level_4_communication_towers || [])
+        ];
+        
+        const updatedDevice = allDevices.find(d => d.id === selectedInfrastructure.id);
+        if (updatedDevice) {
+          setSelectedInfrastructure(updatedDevice);
+        }
+      }
       
       if (currentTimestep && infrastructureStatusData) {
         // 计算当前时间点的状态统计
@@ -1060,9 +1096,7 @@ function Root() {
       return `Device No.: ${object.code}
       Address: ${object.address}
       Structures: ${object.structures}
-      Networks: ${object.networks}
-      Impact Duration: ${object.impact}
-      Backup Power: ${object.backup}`;
+      Networks: ${object.networks}`;
     } else if (object.properties && object.properties.cable_id) {
       // This is for hierarchical power cables
       return `Power Cable ${object.properties.cable_id}
@@ -1078,6 +1112,7 @@ function Root() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <MapGL
+        ref={mapRef}
         initialViewState={INITIAL_VIEW_STATE}
         mapStyle={MAP_STYLES[mapStyle]}
         mapboxAccessToken={MAPBOX_TOKEN}
@@ -1100,8 +1135,8 @@ function Root() {
       {selectedInfrastructure && (
           <Box sx={{
             position: 'fixed',
-            top: 80, 
-            right: 16,
+            bottom: 120, 
+            right: 20,
             zIndex: 11,
             maxHeight: 'calc(100vh - 100px)',
           }}>
@@ -1118,7 +1153,7 @@ function Root() {
       />
       </MapGL>
 
-      {/* NSW Logo - Top Left */}
+      {/* NSW Logo - Top Left 
       <Box
         sx={{
           position: 'absolute',
@@ -1137,6 +1172,7 @@ function Root() {
           style={{ height: 80, width: 'auto' }}
         />
       </Box>
+      */}
 
       {/* Map Style Toggle - Bottom Left */}
       <Box
