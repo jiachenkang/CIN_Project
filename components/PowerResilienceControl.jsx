@@ -4,7 +4,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import DownloadIcon from '@mui/icons-material/Download';
 import InferenceConfig from './InferenceConfig';
 
-const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
+const PowerResilienceCard = ({ layerVisibility, onVisibilityChange, onInferenceComplete }) => {
   const [showInference, setShowInference] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -287,9 +287,9 @@ const PowerResilienceCard = ({ layerVisibility, onVisibilityChange }) => {
   if (showInference) {
     return <InferenceConfig onClose={(success) => {
       setShowInference(false);
-      if (success) {
-        // Reload application data or trigger necessary updates here
-        window.location.reload();
+      if (success && onInferenceComplete) {
+        // Trigger data reload and autoplay via callback
+        onInferenceComplete();
       }
     }} />;
   }

@@ -101,6 +101,7 @@ function Root() {
   const [animationFrame, setAnimationFrame] = useState(0);
   const [powerParticles, setPowerParticles] = useState([]);
   const [floodTimestamps, setFloodTimestamps] = useState([]);
+  const [autoPlayTimeline, setAutoPlayTimeline] = useState(false);
   const [layerVisibility, setLayerVisibility] = useState({
     prec: false,
     tower: false,
@@ -725,6 +726,69 @@ function Root() {
     setMapStyle(prev => prev === 'street' ? 'satellite' : 'street');
   };
 
+  // Handle inference completion - reload data and trigger autoplay
+  const handleInferenceComplete = useCallback(async () => {
+    console.log('Inference complete, reloading data...');
+    
+    // Reset autoplay flag first
+    setAutoPlayTimeline(false);
+    
+    // Reload infrastructure meta data
+    try {
+      const metaResponse = await fetch(INFRA_META);
+      const metaData = await metaResponse.json();
+      setInfrastructureMetaData(metaData);
+      console.log("Reloaded infrastructure meta data");
+    } catch (error) {
+      console.error('Error reloading infrastructure meta data:', error);
+    }
+    
+    // Reload infrastructure status data
+    try {
+      const statusResponse = await fetch(INFRA_STATUS);
+      const statusData = await statusResponse.json();
+      setInfrastructureStatusData(statusData);
+      console.log("Reloaded infrastructure status data");
+    } catch (error) {
+      console.error('Error reloading infrastructure status data:', error);
+    }
+    
+    // Reload flood timestamps
+    try {
+      const response = await fetch('/api/list-flood-folders');
+      if (response.ok) {
+        const folders = await response.json();
+        const timesteps = folders.map(folder => {
+          const match = folder.match(/waterdepth_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/);
+          if (match) {
+            const [_, year, month, day, hour, minute, second] = match;
+            return {
+              time: folder,
+              display: `${day}-${month}-${year} ${hour}:${minute}`
+            };
+          }
+          return null;
+        }).filter(Boolean);
+        
+        timesteps.sort((a, b) => a.time.localeCompare(b.time));
+        setFloodTimestamps(timesteps);
+        
+        // Reset to first timestep
+        if (timesteps.length > 0) {
+          setCurrentTimestep(timesteps[0]);
+        }
+        console.log("Reloaded flood timestamps");
+      }
+    } catch (error) {
+      console.error('Error reloading flood timestamps:', error);
+    }
+    
+    // Trigger autoplay after a short delay to ensure data is loaded
+    setTimeout(() => {
+      setAutoPlayTimeline(true);
+    }, 500);
+  }, []);
+
   // 当zoom状态改变时，强制重新渲染
   useEffect(() => {
     // 这个空的useEffect会在zoom状态改变时触发重新渲染
@@ -1130,6 +1194,7 @@ function Root() {
       <PowerResilienceCard 
         layerVisibility={layerVisibility}
         onVisibilityChange={handleVisibilityChange}
+        onInferenceComplete={handleInferenceComplete}
       />
       
       {selectedInfrastructure && (
@@ -1150,6 +1215,7 @@ function Root() {
         onTimestepChange={handleTimestepChange}
         isVisible={layerVisibility.flood}
         availableTimesteps={floodTimestamps}
+        autoPlay={autoPlayTimeline}
       />
       </MapGL>
 

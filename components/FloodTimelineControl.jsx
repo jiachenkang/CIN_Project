@@ -19,12 +19,13 @@ function generateDefaultTimesteps() {
   return result;
 }
 
-const FloodTimelineControl = ({ onTimestepChange, isVisible, availableTimesteps = [] }) => {
+const FloodTimelineControl = ({ onTimestepChange, isVisible, availableTimesteps = [], autoPlay = false }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimestep, setCurrentTimestep] = useState(0);
   const [playInterval, setPlayInterval] = useState(null);
   const [dynamicWidth, setDynamicWidth] = useState('calc(100vw - 400px)');
   const containerRef = useRef(null);
+  const hasAutoPlayed = useRef(false);
 
   // 使用 useMemo 缓存时间戳数组，避免无限重新创建
   const timesteps = useMemo(() => {
@@ -104,6 +105,23 @@ const FloodTimelineControl = ({ onTimestepChange, isVisible, availableTimesteps 
       setCurrentTimestep(0);
     }
   }, [availableTimesteps]);
+
+  // Handle autoPlay prop - trigger play when autoPlay becomes true
+  useEffect(() => {
+    if (autoPlay && !hasAutoPlayed.current && timesteps.length > 0 && !isPlaying) {
+      hasAutoPlayed.current = true;
+      // Reset to first timestep and start playing
+      setCurrentTimestep(0);
+      setIsPlaying(true);
+      const interval = setInterval(() => {
+        setCurrentTimestep(prev => {
+          const next = (prev + 1) % timesteps.length;
+          return next;
+        });
+      }, 1000);
+      setPlayInterval(interval);
+    }
+  }, [autoPlay, timesteps.length, isPlaying]);
 
   // Notify parent component of timestep change
   useEffect(() => {

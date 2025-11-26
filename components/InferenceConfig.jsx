@@ -23,12 +23,12 @@ const MOCK_DATA = {
   windows: ['24 Hours', '48 Hours'],
   steps: [
     { message: 'Connecting to server', duration: 1, progress: 5 },
-    { message: 'Initialization', duration: 4, progress: 5 },
-    { message: 'Loading Model', duration: 3, progress: 8 },
-    { message: 'Loading Data', duration: 3, progress: 18 },
+    { message: 'Initialization', duration: 5, progress: 5 },
+    { message: 'Loading Model', duration: 4, progress: 8 },
+    { message: 'Loading Data', duration: 20, progress: 18 },
     { message: 'Inferencing', duration: 3, progress: 20 },
     { message: 'Writing results to NetCDF file', duration: 5, progress: 4 },
-    { message: 'Generating TIF files', duration: 3, progress: 40 }
+    { message: 'Generating TIF files', duration: 30, progress: 40 }
   ]
 };
 
